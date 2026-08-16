@@ -1,4 +1,18 @@
-/* Iron District - full feature build with Supabase accounts/saves */
+/* IRON DISTRICT STARTUP COMPATIBILITY */
+
+if (typeof structuredClone !== "function") {
+    window.structuredClone = function (value) {
+        return JSON.parse(JSON.stringify(value));
+    };
+}
+
+window.addEventListener("error", function (event) {
+    console.error("Iron District error:", event.error || event.message);
+});
+
+window.addEventListener("unhandledrejection", function (event) {
+    console.error("Iron District promise error:", event.reason);
+}); /* Iron District - full feature build with Supabase accounts/saves */
 const OWNER_USER='IronDistrict';
 
 const templates=[
@@ -75,34 +89,176 @@ function authMode(mode){
 }
 
 async function signup(){
-  const email=document.getElementById('authEmail')?.value.trim();
-  const u=document.getElementById('authUser')?.value.trim();
-  const p=document.getElementById('authPass')?.value;
-  const p2=document.getElementById('authPass2')?.value;
-  if(!email||!email.includes('@'))return toast('Enter a valid email address.');
-  if(!/^[A-Za-z0-9_]{3,20}$/.test(u||''))return toast('Username must be 3-20 letters, numbers or _.');
-  if(!p||p.length<8)return toast('Use at least 8 characters.');
-  if(p!==p2)return toast('Passwords do not match.');
-  const {data:authData,error}=await supabaseClient.auth.signUp({email,password:p,options:{data:{username:u}}});
-  if(error){console.error(error);return toast(error.message);}
-  if(!authData?.user)return toast('Account creation failed.');
-  if(!authData.session)return toast('Account created. Check your email before logging in.');
-  user={id:authData.user.id,name:u,role:u==='IronDistrict'?'Owner':'Player'};
-  await loadPlayerData();
-  enter();
+
+    try {
+
+        const email =
+            document.getElementById("authEmail")?.value.trim();
+
+        const username =
+            document.getElementById("authUser")?.value.trim();
+
+        const password =
+            document.getElementById("authPass")?.value;
+
+        const confirmPassword =
+            document.getElementById("authPass2")?.value;
+
+        if (!email || !email.includes("@")) {
+            return toast("Enter a valid email address.");
+        }
+
+        if (!/^[A-Za-z0-9_]{3,20}$/.test(username || "")) {
+            return toast(
+                "Username must be 3-20 letters, numbers or _."
+            );
+        }
+
+        if (!password || password.length < 8) {
+            return toast(
+                "Password must be at least 8 characters."
+            );
+        }
+
+        if (password !== confirmPassword) {
+            return toast("Passwords do not match.");
+        }
+
+        if (
+            typeof supabaseClient === "undefined" ||
+            !supabaseClient?.auth
+        ) {
+            return toast("Authentication service failed to load.");
+        }
+
+        const result =
+            await supabaseClient.auth.signUp({
+                email,
+                password,
+                options: {
+                    data: {
+                        username
+                    }
+                }
+            });
+
+        if (result.error) {
+            console.error(
+                "Supabase signup error:",
+                result.error
+            );
+
+            return toast(
+                result.error.message ||
+                "Signup failed."
+            );
+        }
+
+        if (!result.data?.user) {
+            return toast("Account creation failed.");
+        }
+
+        if (!result.data.session) {
+            return toast(
+                "Account created. Check your email before logging in."
+            );
+        }
+
+        user = {
+            id: result.data.user.id,
+            name: username,
+            role: username === "IronDistrict"
+                ? "Owner"
+                : "Player"
+        };
+
+        await loadPlayerData();
+        enter();
+
+    } catch (error) {
+
+        console.error(
+            "Iron District signup crash:",
+            error
+        );
+
+        toast(
+            error?.message ||
+            "Something went wrong while creating the account."
+        );
+    }
 }
 
 async function login(){
-  const email=document.getElementById('authEmail')?.value.trim();
-  const p=document.getElementById('authPass')?.value;
-  if(!email||!p)return toast('Enter your email and password.');
-  const {data:authData,error}=await supabaseClient.auth.signInWithPassword({email,password:p});
-  if(error){console.error(error);return toast(error.message||'Invalid email or password.');}
-  const u=authData.user;
-  const username=u.user_metadata?.username||u.email?.split('@')[0]||'Player';
-  user={id:u.id,name:username,role:username==='IronDistrict'?'Owner':'Player'};
-  await loadPlayerData();
-  enter();
+
+    try {
+
+        const email =
+            document.getElementById("authEmail")?.value.trim();
+
+        const password =
+            document.getElementById("authPass")?.value;
+
+        if (!email || !password) {
+            return toast("Enter your email and password.");
+        }
+
+        if (
+            typeof supabaseClient === "undefined" ||
+            !supabaseClient?.auth
+        ) {
+            return toast("Authentication service failed to load.");
+        }
+
+        const result =
+            await supabaseClient.auth.signInWithPassword({
+                email,
+                password
+            });
+
+        if (result.error) {
+            console.error("Supabase login error:", result.error);
+
+            return toast(
+                result.error.message ||
+                "Login failed."
+            );
+        }
+
+        if (!result.data?.user) {
+            return toast("Login failed.");
+        }
+
+        const authUser = result.data.user;
+
+        const username =
+            authUser.user_metadata?.username ||
+            authUser.email?.split("@")[0] ||
+            "Player";
+
+        user = {
+            id: authUser.id,
+            name: username,
+            role: username === "IronDistrict"
+                ? "Owner"
+                : "Player"
+        };
+
+        await loadPlayerData();
+        enter();
+
+    } catch (error) {
+
+        console.error(
+            "Iron District login crash:",
+            error
+        );
+
+        toast(
+            error?.message ||
+            "Something went wrong while logging in."
+        );
+    }
 }
 
 async function logout(){await supabaseClient.auth.signOut();user=null;data=structuredClone(DEFAULT_DATA);document.getElementById('app').classList.add('hidden');document.getElementById('auth').classList.remove('hidden');authMode('login')}
@@ -3792,193 +3948,3 @@ restrictPlayer = async function () {
 
     renderStaff("restrictions");
 };
-/* =========================================================
-   IRON DISTRICT MOBILE SUPPORT
-   ========================================================= */
-
-* {
-  box-sizing: border-box;
-}
-
-html,
-body {
-  width: 100%;
-  min-width: 0;
-  overflow-x: hidden;
-}
-
-img,
-video,
-canvas,
-iframe {
-  max-width: 100%;
-}
-
-button,
-input,
-textarea,
-select {
-  max-width: 100%;
-}
-
-@media (max-width: 900px) {
-
-  body {
-    font-size: 14px;
-  }
-
-  .topbar {
-    height: auto;
-    min-height: 56px;
-    padding: 10px;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .layout {
-    display: block;
-  }
-
-  .sidebar {
-    width: 100%;
-    min-height: 0;
-    position: static;
-  }
-
-  #nav {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 6px;
-  }
-
-  .nav {
-    width: 100%;
-    min-height: 44px;
-    padding: 10px;
-  }
-
-  #main {
-    width: 100%;
-    min-width: 0;
-    padding: 10px;
-  }
-
-  .hero,
-  .card {
-    width: 100%;
-    min-width: 0;
-  }
-
-  .grid {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-
-  .table {
-    display: block;
-    width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .chat {
-    display: block;
-  }
-
-  .chat-window {
-    width: 100%;
-  }
-
-  .chat-input {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-
-  .chat-input input,
-  .chat-input button {
-    width: 100%;
-    min-height: 44px;
-  }
-
-  input,
-  textarea,
-  select {
-    width: 100%;
-    font-size: 16px;
-    min-height: 44px;
-  }
-
-  textarea {
-    min-height: 120px;
-  }
-
-  .button,
-  .primary,
-  .danger {
-    width: 100%;
-    min-height: 44px;
-    margin-top: 6px;
-  }
-
-  .forum-tabs,
-  .rule-tabs,
-  .staff-tabs {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
-  }
-
-  .restriction-grid {
-    display: block;
-  }
-
-  .restriction-grid > * {
-    margin-bottom: 10px;
-  }
-
-  .messages {
-    max-height: 55vh;
-    overflow-y: auto;
-  }
-
-  .mail-row,
-  .forum-thread,
-  .forum-post,
-  .member {
-    overflow-wrap: anywhere;
-  }
-}
-
-@media (max-width: 480px) {
-
-  #nav {
-    grid-template-columns: 1fr;
-  }
-
-  .forum-tabs,
-  .rule-tabs,
-  .staff-tabs {
-    grid-template-columns: 1fr;
-  }
-
-  #main {
-    padding: 8px;
-  }
-
-  .hero {
-    padding: 12px;
-  }
-
-  .hero h1 {
-    font-size: 21px;
-  }
-
-  .stat {
-    font-size: 24px;
-  }
-
-  .topbar {
-    padding: 8px;
-  }
-}
