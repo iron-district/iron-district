@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Iron District</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div id="auth" class="auth">
+  <div class="auth-card">
+
+    <div class="logo">◆ IRON <span>DISTRICT</span></div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="authMode('login')">LOGIN</button>
+      <button class="tab" onclick="authMode('signup')">SIGN UP</button>
+    </div>
+
+    <div id="authForm"></div>
+
+    <p class="muted small">
+      Create an account and play Iron District online.
+    </p>
+
+  </div>
+</div>
+
+<div id="app" class="hidden">
+
+<header class="topbar">
+
+  <div class="brand">
+    ◆ <b>IRON</b> <span>DISTRICT</span>
+  </div>
+
+  <div class="top-links">
+    <button onclick="page('rules')">RULES</button>
+    <button onclick="page('staffteam')">STAFF TEAM</button>
+    <button onclick="page('forums')">FORUMS</button>
+  </div>
+
+  <div class="top-actions">
+
+    <span id="clock"></span>
+
+    <button onclick="openMail()">
+      ✉ <i id="mailBadge">0</i>
+    </button>
+
+    <button onclick="page('settings')">
+      SETTINGS
+    </button>
+
+    <button onclick="page('profile')">
+      PROFILE
+    </button>
+
+    <button onclick="logout()">
+      LOG OUT
+    </button>
+
+  </div>
+
+</header>
+
+<div class="layout">
+
+  <aside class="sidebar">
+
+    <div class="player-card">
+
+      <div class="avatar" id="avatar">
+        ID
+      </div>
+
+      <div>
+        <b id="playerName">
+          IronDistrict
+        </b>
+
+        <small>
+          Level <span id="level">1</span>
+          •
+          <span id="rank">New Blood</span>
+        </small>
+
+      </div>
+
+    </div>
+
+    <nav id="nav"></nav>
+
+    <div class="status-box">
+
+      <div>
+        <span>Energy</span>
+        <b id="energy">100/100</b>
+      </div>
+
+      <div class="bar">
+        <i id="energyBar"></i>
+      </div>
+
+      <div>
+        <span>Nerve</span>
+        <b id="nerve">20/20</b>
+      </div>
+
+      <div class="bar">
+        <i id="nerveBar"></i>
+      </div>
+
+      <div>
+        <span>Life</span>
+        <b id="life">100/100</b>
+      </div>
+
+      <div class="bar">
+        <i id="lifeBar"></i>
+      </div>
+
+    </div>
+
+  </aside>
+
+  <main id="main"></main>
+
+</div>
+
+</div>
+
+<div id="mailModal" class="modal">
+
+  <div class="modal-card">
+
+    <button
+      class="close"
+      onclick="closeModal('mailModal')">
+      ×
+    </button>
+
+    <h2>Mail</h2>
+
+    <div id="mailList"></div>
+
+    <div class="compose">
+
+      <input
+        id="mailTo"
+        placeholder="Recipient">
+
+      <input
+        id="mailSubject"
+        placeholder="Subject">
+
+      <textarea
+        id="mailBody"
+        placeholder="Message"></textarea>
+
+      <button
+        class="primary"
+        onclick="sendMail()">
+        SEND
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<!-- Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+
+const SUPABASE_URL =
+  "https://blfqrjeyyuwbzlloxbqk.supabase.co";
+
+const SUPABASE_KEY =
+  "sb_publishable_rpADJ8D4N7ZSqAbKK4XtPA_QCCS6NMM";
+
+const supabaseClient =
+  window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+  );
+
+</script>
+
+<!-- Your complete game -->
+<script src="app.js"></script>
+
+</body>
+</html>
