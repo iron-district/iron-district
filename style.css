@@ -5,3 +5,177 @@
 .top-links{display:flex;gap:6px;margin-left:auto;margin-right:12px}.top-links button{background:#12181d;border:1px solid #303840;color:#aeb8bf;padding:8px 11px;cursor:pointer;font-weight:bold;font-size:11px;letter-spacing:.5px}.top-links button:hover{background:#25313a;color:#fff}.rule-tabs,.staff-tabs,.forum-tabs{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}.rule-tabs .button,.staff-tabs .button,.forum-tabs .button{margin:0}.selected{background:#536572!important;color:#fff!important}.rule-panel{min-height:260px}.message-groups{display:grid;grid-template-columns:190px 1fr;gap:12px}.message-cats{display:flex;flex-direction:column;gap:5px}.message-cats button{text-align:left;background:#11171b;border:1px solid #303840;color:#aeb8bf;padding:9px;cursor:pointer}.message-cats button.selected{border-left:3px solid #9aafbc}.message-list{max-height:420px;overflow:auto}.message-option{padding:10px;border:1px solid #303840;background:#11171b;margin-bottom:6px;cursor:pointer}.message-option:hover{background:#202930}.member{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #293239;padding:12px 0}.tag{background:#27333b;border:1px solid #485660;padding:5px 8px;font-size:11px}@media(max-width:800px){.top-links{order:3;width:100%;margin:0;overflow:auto}.topbar{height:auto;min-height:58px;flex-wrap:wrap;padding:8px}.top-actions{margin-left:auto}.message-groups{grid-template-columns:1fr}}
 
 body.compact .card{padding:10px}body.compact main{padding:12px}body.compact .hero{padding:16px}.top-actions button{cursor:pointer}.hero>.danger{float:right;margin-left:8px}
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+img,
+video,
+canvas,
+iframe {
+  max-width: 100%;
+}
+
+@media (max-width: 900px) {
+
+  body {
+    font-size: 14px;
+  }
+
+  .topbar {
+    height: auto;
+    min-height: 56px;
+    padding: 10px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .layout {
+    display: block;
+  }
+
+  .sidebar {
+    width: 100%;
+    min-height: 0;
+    position: static;
+  }
+
+  #nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .nav {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px;
+  }
+
+  #main {
+    width: 100%;
+    min-width: 0;
+    padding: 10px;
+  }
+
+  .hero,
+  .card {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .chat {
+    display: block;
+  }
+
+  .chat-window {
+    width: 100%;
+  }
+
+  .chat-input {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .chat-input input,
+  .chat-input button {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  input,
+  textarea,
+  select {
+    width: 100%;
+    font-size: 16px;
+    min-height: 44px;
+  }
+
+  textarea {
+    min-height: 120px;
+  }
+
+  .button,
+  .primary,
+  .danger {
+    width: 100%;
+    min-height: 44px;
+    margin-top: 6px;
+  }
+
+  .forum-tabs,
+  .rule-tabs,
+  .staff-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .restriction-grid {
+    display: block;
+  }
+
+  .restriction-grid > * {
+    margin-bottom: 10px;
+  }
+
+  .messages {
+    max-height: 55vh;
+    overflow-y: auto;
+  }
+
+  .mail-row,
+  .forum-thread,
+  .forum-post,
+  .member {
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 480px) {
+
+  #nav {
+    grid-template-columns: 1fr;
+  }
+
+  .forum-tabs,
+  .rule-tabs,
+  .staff-tabs {
+    grid-template-columns: 1fr;
+  }
+
+  #main {
+    padding: 8px;
+  }
+
+  .hero {
+    padding: 12px;
+  }
+
+  .hero h1 {
+    font-size: 21px;
+  }
+
+  .stat {
+    font-size: 24px;
+  }
+}

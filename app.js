@@ -129,7 +129,40 @@ function page(p,btn){
  if(p==='rules')return renderRules('General');
  if(p==='staffteam')return renderStaffTeam();
  if(p==='credits')m.innerHTML=`<div class="hero"><h1>Credits</h1><p>Iron District development credits.</p></div><div class="card"><h3>Iron District</h3><p class="muted">Original text-based RPG prototype, UI, gameplay systems and moderation concepts.</p><p>Inspired by the genre of browser crime RPGs without using Torn's proprietary source code or assets.</p></div>`;
- if(p==='hospital')m.innerHTML=`<div class="hero"><h1>Hospital</h1><p>Recovery and medical status.</p></div><div class="card"><h3>Life: ${data.life}/100</h3><p class="muted">${data.hospital?'You are hospitalized. Most actions are disabled until release.':'You are not hospitalized.'}</p><button class="button" onclick="hospitalize()">${data.hospital?'RECOVER':'TEST HOSPITAL'}</button></div>`;
+if(p==='hospital')m.innerHTML=`
+<div class="hero">
+  <h1>Hospital</h1>
+  <p>Recovery and medical status.</p>
+</div>
+
+<div class="card hospital-card">
+  <h3>Life: ${data.life}/100</h3>
+
+  ${
+    data.hospital
+      ? `
+        <div class="notice">
+          <b>You are currently hospitalized.</b>
+          <br>
+          Most actions are unavailable until your recovery timer expires.
+        </div>
+
+        <p class="muted">
+          Recovery remaining:
+          ${formatRemaining(data.hospital)}
+        </p>
+      `
+      : `
+        <div class="notice">
+          You are not currently hospitalized.
+        </div>
+
+        <p class="muted">
+          Hospital treatment is applied automatically when you are injured.
+        </p>
+      `
+  }
+</div>`;
  if(p==='jail')m.innerHTML=`<div class="hero"><h1>Jail</h1><p>Serve your sentence.</p></div><div class="card"><h3>${data.jail?'You are jailed.':'You are free.'}</h3><p class="muted">${data.jail?'City actions, crimes and chat are disabled while jailed.':'No active sentence.'}</p><button class="button" onclick="jailAction()">${data.jail?'SERVE TIME':'TEST JAIL'}</button></div>`;
  if(p==='staff'&&isStaff())return renderStaff('messages','Advertising');
  update();
@@ -3650,3 +3683,302 @@ async function showModerationLog() {
         </div>
     `;
 };
+/* =========================================================
+   RECORD STAFF RESTRICTIONS IN MODERATION LOG
+   ========================================================= */
+
+const originalRestrictPlayerForLog = restrictPlayer;
+
+restrictPlayer = async function () {
+
+    if (!isStaff()) {
+        return toast("Staff access required.");
+    }
+
+    const targetName =
+        document.getElementById("restrictTarget")?.value.trim();
+
+    const durationValue =
+        document.getElementById("restrictTime")?.value;
+
+    const customValue =
+        document.getElementById("restrictCustom")?.value;
+
+    const reason =
+        document.getElementById("restrictReason")?.value.trim()
+        || "Violation of district rules";
+
+    if (!targetName) {
+        return toast("Enter a player username.");
+    }
+
+    const target =
+        await findIronDistrictPlayer(targetName);
+
+    if (!target) {
+        return toast("That player does not exist.");
+    }
+
+    const milliseconds =
+        duration(durationValue, customValue);
+
+    if (!Number.isFinite(milliseconds) || milliseconds <= 0) {
+        return toast("Invalid restriction duration.");
+    }
+
+    const minutes =
+        Math.max(1, Math.ceil(milliseconds / 60000));
+
+    const { error: restrictionError } =
+        await supabaseClient.rpc(
+            "apply_player_restriction",
+            {
+                p_target_user_id: target.user_id,
+                p_target_username: target.username,
+                p_action_type: "chat_restriction",
+                p_reason: reason,
+                p_minutes: minutes
+            }
+        );
+
+    if (restrictionError) {
+        console.error(restrictionError);
+        return toast(
+            restrictionError.message ||
+            "Restriction failed."
+        );
+    }
+
+    const { error: logError } =
+        await supabaseClient
+            .from("moderation_log")
+            .insert({
+                target_user_id: target.user_id,
+                target_username: target.username,
+                action_type: "Chat Restriction",
+                reason: reason,
+                duration_minutes: minutes,
+                staff_user_id: user.id,
+                staff_username: user.name
+            });
+
+    if (logError) {
+        console.error("Moderation log:", logError);
+    }
+
+    const { error: mailError } =
+        await supabaseClient
+            .from("player_mail")
+            .insert({
+                recipient_id: target.user_id,
+                sender_id: user.id,
+                sender_name: "Iron District Staff",
+                subject: "Chat Restriction",
+                body:
+                    `Your chat access has been restricted for ` +
+                    `${formatRemaining(milliseconds)}. ` +
+                    `Reason: ${reason}`,
+                system: true,
+                unread: true
+            });
+
+    if (mailError) {
+        console.error("Moderation mail:", mailError);
+    }
+
+    toast(
+        `${target.username} has been restricted.`
+    );
+
+    renderStaff("restrictions");
+};
+/* =========================================================
+   IRON DISTRICT MOBILE SUPPORT
+   ========================================================= */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+img,
+video,
+canvas,
+iframe {
+  max-width: 100%;
+}
+
+button,
+input,
+textarea,
+select {
+  max-width: 100%;
+}
+
+@media (max-width: 900px) {
+
+  body {
+    font-size: 14px;
+  }
+
+  .topbar {
+    height: auto;
+    min-height: 56px;
+    padding: 10px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .layout {
+    display: block;
+  }
+
+  .sidebar {
+    width: 100%;
+    min-height: 0;
+    position: static;
+  }
+
+  #nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .nav {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px;
+  }
+
+  #main {
+    width: 100%;
+    min-width: 0;
+    padding: 10px;
+  }
+
+  .hero,
+  .card {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .chat {
+    display: block;
+  }
+
+  .chat-window {
+    width: 100%;
+  }
+
+  .chat-input {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .chat-input input,
+  .chat-input button {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  input,
+  textarea,
+  select {
+    width: 100%;
+    font-size: 16px;
+    min-height: 44px;
+  }
+
+  textarea {
+    min-height: 120px;
+  }
+
+  .button,
+  .primary,
+  .danger {
+    width: 100%;
+    min-height: 44px;
+    margin-top: 6px;
+  }
+
+  .forum-tabs,
+  .rule-tabs,
+  .staff-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .restriction-grid {
+    display: block;
+  }
+
+  .restriction-grid > * {
+    margin-bottom: 10px;
+  }
+
+  .messages {
+    max-height: 55vh;
+    overflow-y: auto;
+  }
+
+  .mail-row,
+  .forum-thread,
+  .forum-post,
+  .member {
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 480px) {
+
+  #nav {
+    grid-template-columns: 1fr;
+  }
+
+  .forum-tabs,
+  .rule-tabs,
+  .staff-tabs {
+    grid-template-columns: 1fr;
+  }
+
+  #main {
+    padding: 8px;
+  }
+
+  .hero {
+    padding: 12px;
+  }
+
+  .hero h1 {
+    font-size: 21px;
+  }
+
+  .stat {
+    font-size: 24px;
+  }
+
+  .topbar {
+    padding: 8px;
+  }
+}
