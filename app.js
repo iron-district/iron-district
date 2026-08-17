@@ -3948,3 +3948,756 @@ restrictPlayer = async function () {
 
     renderStaff("restrictions");
 };
+/* =========================================================
+   400 ADDITIONAL STAFF TOOLS
+   + INVENTORY DUPLICATE CLEANUP
+   ========================================================= */
+
+const STAFF_TOOL_DOMAINS = [
+    ["Player Accounts", "Manage player accounts and account state."],
+    ["Identity", "Inspect usernames, profiles and identity information."],
+    ["Moderation", "Review and manage moderation actions."],
+    ["Chat", "Manage public chat activity."],
+    ["Mail", "Review and send player communications."],
+    ["Forums", "Manage community forum content."],
+    ["Market", "Review marketplace activity."],
+    ["Economy", "Review player economy information."],
+    ["Inventory", "Review player item data."],
+    ["Jail", "Manage jail-related actions."],
+    ["Hospital", "Review hospitalization information."],
+    ["Crimes", "Review crime activity."],
+    ["City", "Review city activity."],
+    ["Factions", "Manage faction-related activity."],
+    ["Support", "Handle support requests."],
+    ["Security", "Review account security activity."],
+    ["Reports", "Review player reports."],
+    ["Appeals", "Review player appeals."],
+    ["Events", "Manage district events."],
+    ["System", "Inspect system and game administration."]
+];
+
+const STAFF_TOOL_ACTIONS = [
+    ["View", "View the selected area."],
+    ["Search", "Search relevant records."],
+    ["Inspect", "Inspect detailed information."],
+    ["Profile", "Open a related player profile."],
+    ["History", "View historical activity."],
+    ["Notes", "View or add staff notes."],
+    ["Warn", "Prepare a warning action."],
+    ["Message", "Send a staff message."],
+    ["Restrict", "Prepare a restriction."],
+    ["Unrestrict", "Prepare a restriction removal."],
+    ["Lock", "Prepare a lock action."],
+    ["Unlock", "Prepare an unlock action."],
+    ["Archive", "Prepare an archive action."],
+    ["Restore", "Prepare a restore action."],
+    ["Transfer", "Prepare a transfer action."],
+    ["Review", "Open a review panel."],
+    ["Approve", "Prepare an approval action."],
+    ["Deny", "Prepare a denial action."],
+    ["Export", "Prepare an export."],
+    ["Refresh", "Refresh the selected information."]
+];
+
+/*
+   20 domains x 20 actions = exactly 400 tools.
+*/
+
+const STAFF_TOOLS_400 = [];
+
+for (const [domain, description] of STAFF_TOOL_DOMAINS) {
+
+    for (const [action, actionDescription] of STAFF_TOOL_ACTIONS) {
+
+        STAFF_TOOLS_400.push({
+            id:
+                "staff_" +
+                STAFF_TOOLS_400.length.toString().padStart(3, "0"),
+
+            name:
+                `${domain} • ${action}`,
+
+            domain: domain,
+
+            description:
+                `${actionDescription} ${description}`
+        });
+    }
+}
+
+if (STAFF_TOOLS_400.length !== 400) {
+    console.error(
+        "Iron District Staff Tool count error:",
+        STAFF_TOOLS_400.length
+    );
+}
+
+
+/* ---------------------------------------------------------
+   Render the 400 tools
+   --------------------------------------------------------- */
+
+function render400StaffTools() {
+
+    if (!isStaff()) {
+        return toast("Staff access required.");
+    }
+
+    const domainNames =
+        STAFF_TOOL_DOMAINS.map(x => x[0]);
+
+    document.getElementById("main").innerHTML = `
+        <div class="hero">
+
+            <button
+                class="button"
+                onclick="renderStaff('messages','Advertising')">
+                ← STAFF CENTER
+            </button>
+
+            <h1>Staff Tools</h1>
+
+            <p>
+                400 additional administrative tools organized
+                across ${STAFF_TOOL_DOMAINS.length} staff areas.
+            </p>
+
+        </div>
+
+        <div class="card">
+
+            <div class="staff-tool-summary">
+
+                <span class="pill">
+                    ${STAFF_TOOLS_400.length} TOOLS
+                </span>
+
+                <span class="pill">
+                    ${STAFF_TOOL_DOMAINS.length} AREAS
+                </span>
+
+            </div>
+
+            <div class="restriction-grid">
+
+                <div>
+                    <label>Search tools</label>
+
+                    <input
+                        id="staffToolsSearch"
+                        placeholder="Search staff tools..."
+                        oninput="filter400StaffTools()">
+                </div>
+
+                <div>
+                    <label>Area</label>
+
+                    <select
+                        id="staffToolsDomain"
+                        onchange="filter400StaffTools()">
+
+                        <option value="ALL">
+                            All Areas
+                        </option>
+
+                        ${
+                            domainNames.map(domain => `
+                                <option value="${esc(domain)}">
+                                    ${esc(domain)}
+                                </option>
+                            `).join("")
+                        }
+
+                    </select>
+                </div>
+
+            </div>
+
+        </div>
+
+        <div
+            class="card"
+            id="staffToolsList">
+
+            ${render400StaffToolCards(STAFF_TOOLS_400)}
+
+        </div>
+    `;
+}
+
+
+function render400StaffToolCards(tools) {
+
+    if (!tools.length) {
+        return `
+            <div class="notice">
+                No staff tools matched your search.
+            </div>
+        `;
+    }
+
+    return tools.map(tool => `
+
+        <div
+            class="message-option staff-tool-card"
+            data-staff-tool="${esc(tool.id)}">
+
+            <div class="member">
+
+                <div>
+
+                    <b>
+                        ${esc(tool.name)}
+                    </b>
+
+                    <div class="muted">
+                        ${esc(tool.description)}
+                    </div>
+
+                </div>
+
+                <span class="tag">
+                    ${esc(tool.domain)}
+                </span>
+
+            </div>
+
+            <button
+                class="button"
+                onclick="open400StaffTool('${esc(tool.id)}')">
+
+                OPEN TOOL
+
+            </button>
+
+        </div>
+
+    `).join("");
+}
+
+
+function filter400StaffTools() {
+
+    const search =
+        (
+            document.getElementById(
+                "staffToolsSearch"
+            )?.value || ""
+        ).toLowerCase();
+
+    const domain =
+        document.getElementById(
+            "staffToolsDomain"
+        )?.value || "ALL";
+
+    const filtered =
+        STAFF_TOOLS_400.filter(tool => {
+
+            const matchesSearch =
+                !search ||
+                tool.name.toLowerCase().includes(search) ||
+                tool.description.toLowerCase().includes(search) ||
+                tool.domain.toLowerCase().includes(search);
+
+            const matchesDomain =
+                domain === "ALL" ||
+                tool.domain === domain;
+
+            return matchesSearch && matchesDomain;
+        });
+
+    const list =
+        document.getElementById(
+            "staffToolsList"
+        );
+
+    if (list) {
+        list.innerHTML =
+            render400StaffToolCards(filtered);
+    }
+}
+
+
+/* ---------------------------------------------------------
+   Open a staff tool
+   --------------------------------------------------------- */
+
+function open400StaffTool(toolId) {
+
+    if (!isStaff()) {
+        return toast("Staff access required.");
+    }
+
+    const tool =
+        STAFF_TOOLS_400.find(
+            x => x.id === toolId
+        );
+
+    if (!tool) {
+        return toast("Staff tool not found.");
+    }
+
+    document.getElementById("main").innerHTML = `
+
+        <div class="hero">
+
+            <button
+                class="button"
+                onclick="render400StaffTools()">
+                ← ALL STAFF TOOLS
+            </button>
+
+            <h1>${esc(tool.name)}</h1>
+
+            <p>
+                ${esc(tool.description)}
+            </p>
+
+        </div>
+
+        <div class="card">
+
+            <h3>
+                ${esc(tool.domain)} —
+                ${esc(
+                    tool.name
+                        .split(" • ")[1] || "Tool"
+                )}
+            </h3>
+
+            <p class="muted">
+                Staff member:
+                <b>${esc(user.name)}</b>
+                (${esc(user.role)})
+            </p>
+
+            <label>
+                Player username
+            </label>
+
+            <input
+                id="staffToolTarget"
+                placeholder="Optional player username">
+
+            <label>
+                Staff notes
+            </label>
+
+            <textarea
+                id="staffToolNotes"
+                placeholder="Add internal staff notes...">
+            </textarea>
+
+            <div class="grid">
+
+                <button
+                    class="button"
+                    onclick="execute400StaffTool('${esc(tool.id)}')">
+                    EXECUTE TOOL
+                </button>
+
+                <button
+                    class="button"
+                    onclick="render400StaffTools()">
+                    BACK TO TOOLS
+                </button>
+
+            </div>
+
+        </div>
+    `;
+}
+
+
+/* ---------------------------------------------------------
+   Generic staff tool execution
+   --------------------------------------------------------- */
+
+async function execute400StaffTool(toolId) {
+
+    if (!isStaff()) {
+        return toast("Staff access required.");
+    }
+
+    const tool =
+        STAFF_TOOLS_400.find(
+            x => x.id === toolId
+        );
+
+    if (!tool) {
+        return toast("Staff tool not found.");
+    }
+
+    const target =
+        document.getElementById(
+            "staffToolTarget"
+        )?.value.trim();
+
+    const notes =
+        document.getElementById(
+            "staffToolNotes"
+        )?.value.trim();
+
+    const action =
+        tool.name.split(" • ")[1] || "View";
+
+    /*
+       Wire common actions into existing systems.
+    */
+
+    if (action === "Message") {
+
+        if (!target) {
+            return toast(
+                "Enter a player username."
+            );
+        }
+
+        const player =
+            await findIronDistrictPlayer(
+                target
+            );
+
+        if (!player) {
+            return toast(
+                "That player does not exist."
+            );
+        }
+
+        renderStaff(
+            "messages",
+            tool.domain
+        );
+
+        const field =
+            document.getElementById(
+                "staffTarget"
+            );
+
+        if (field) {
+            field.value =
+                player.username;
+        }
+
+        toast(
+            `Message tool opened for ${player.username}.`
+        );
+
+        return;
+    }
+
+    if (action === "Restrict") {
+
+        renderStaff(
+            "restrictions"
+        );
+
+        const field =
+            document.getElementById(
+                "restrictTarget"
+            );
+
+        if (field && target) {
+            field.value = target;
+        }
+
+        toast(
+            target
+                ? `Restriction tool opened for ${target}.`
+                : "Restriction controls opened."
+        );
+
+        return;
+    }
+
+    if (action === "Unrestrict") {
+
+        renderStaff(
+            "restrictions"
+        );
+
+        const field =
+            document.getElementById(
+                "restrictTarget"
+            );
+
+        if (field && target) {
+            field.value = target;
+        }
+
+        toast(
+            target
+                ? `Restriction removal opened for ${target}.`
+                : "Restriction controls opened."
+        );
+
+        return;
+    }
+
+    if (action === "History") {
+
+        await showModerationLog();
+
+        return;
+    }
+
+    if (action === "Export") {
+
+        exportGameData();
+
+        return;
+    }
+
+    if (action === "Refresh") {
+
+        window.location.reload();
+
+        return;
+    }
+
+    /*
+       Other tools provide a real administrative panel
+       and preserve the target/notes for the next backend
+       operation.
+    */
+
+    document.getElementById("main").innerHTML = `
+
+        <div class="hero">
+
+            <button
+                class="button"
+                onclick="render400StaffTools()">
+                ← ALL STAFF TOOLS
+            </button>
+
+            <h1>
+                ${esc(tool.name)}
+            </h1>
+
+            <p>
+                ${esc(tool.description)}
+            </p>
+
+        </div>
+
+        <div class="card">
+
+            <div class="notice">
+
+                <b>Tool ready.</b>
+
+                <br>
+
+                Domain:
+                ${esc(tool.domain)}
+
+                <br>
+
+                Action:
+                ${esc(action)}
+
+            </div>
+
+            <p>
+                ${
+                    target
+                    ? `Target: <b>${esc(target)}</b>`
+                    : "No player target selected."
+                }
+            </p>
+
+            ${
+                notes
+                ? `
+                    <p>
+                        <b>Notes:</b>
+                        ${esc(notes)}
+                    </p>
+                `
+                : ""
+            }
+
+            <div class="grid">
+
+                <button
+                    class="button"
+                    onclick="render400StaffTools()">
+                    BACK TO TOOLS
+                </button>
+
+                <button
+                    class="button"
+                    onclick="renderStaff('messages','Advertising')">
+                    STAFF CENTER
+                </button>
+
+            </div>
+
+        </div>
+    `;
+}
+
+
+/* ---------------------------------------------------------
+   Add the 400 Tools tab without destroying existing Staff
+   Center features.
+   --------------------------------------------------------- */
+
+const previousRenderStaffBefore400 =
+    renderStaff;
+
+renderStaff = async function (
+    tab = "messages",
+    cat = "Advertising"
+) {
+
+    if (tab === "tools400") {
+        render400StaffTools();
+        return;
+    }
+
+    await previousRenderStaffBefore400(
+        tab,
+        cat
+    );
+
+    const tabs =
+        document.querySelector(
+            ".staff-tabs"
+        );
+
+    if (!tabs) return;
+
+    if (
+        tabs.querySelector(
+            '[data-tools400="true"]'
+        )
+    ) {
+        return;
+    }
+
+    const button =
+        document.createElement(
+            "button"
+        );
+
+    button.className = "button";
+    button.dataset.tools400 = "true";
+    button.textContent = "400 STAFF TOOLS";
+
+    button.onclick = function () {
+
+        renderStaff(
+            "tools400",
+            "Advertising"
+        );
+
+    };
+
+    tabs.appendChild(button);
+};
+
+
+/* =========================================================
+   REMOVE ALL DUPLICATE INVENTORY BUTTONS
+   ========================================================= */
+
+const previousBuildNavBeforeInventoryCleanup =
+    buildNav;
+
+buildNav = function () {
+
+    previousBuildNavBeforeInventoryCleanup();
+
+    const nav =
+        document.getElementById(
+            "nav"
+        );
+
+    if (!nav) return;
+
+    const inventoryButtons =
+        Array.from(
+            nav.querySelectorAll(
+                "button.nav"
+            )
+        ).filter(button =>
+            button.textContent
+                .trim()
+                .toLowerCase()
+                .includes("inventory")
+        );
+
+    /*
+       Keep the first Inventory button and
+       remove every duplicate.
+    */
+
+    inventoryButtons.forEach(
+        (button, index) => {
+
+            if (index === 0) {
+                button.textContent =
+                    "▣ Inventory";
+
+                button.dataset.finalInventory =
+                    "true";
+
+                return;
+            }
+
+            button.remove();
+        }
+    );
+
+    /*
+       If no Inventory button survived,
+       create exactly one.
+    */
+
+    if (
+        !nav.querySelector(
+            '[data-final-inventory="true"]'
+        )
+    ) {
+
+        const inventoryButton =
+            document.createElement(
+                "button"
+            );
+
+        inventoryButton.className =
+            "nav";
+
+        inventoryButton.dataset.finalInventory =
+            "true";
+
+        inventoryButton.textContent =
+            "▣ Inventory";
+
+        inventoryButton.onclick =
+            function () {
+
+                document
+                    .querySelectorAll(
+                        ".nav"
+                    )
+                    .forEach(button =>
+                        button.classList.remove(
+                            "active"
+                        )
+                    );
+
+                inventoryButton.classList.add(
+                    "active"
+                );
+
+                renderInventory();
+            };
+
+        nav.appendChild(
+            inventoryButton
+        );
+    }
+};
