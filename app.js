@@ -3039,15 +3039,27 @@ sendMail = async function () {
    STAFF AUTOMATED SYSTEM MESSAGES
    ========================================================= */
 
-chooseStaffMessage = function (body) {
-    const field = document.getElementById("staffBody");
+chooseStaffMessage = function(body) {
+
+    const field =
+        document.getElementById("staffBody");
 
     if (!field) {
-        return toast("Message editor is unavailable.");
+        return toast("Message box not found.");
     }
 
-    field.value = String(body || "");
+    field.value =
+        String(body || "").trim();
+
     field.focus();
+
+    field.dispatchEvent(
+        new Event("input", {
+            bubbles: true
+        })
+    );
+
+    toast("Automated message loaded.");
 };
 
 
@@ -4700,4 +4712,351 @@ buildNav = function () {
             inventoryButton
         );
     }
+};
+/* =========================================================
+   STAFF PLAYER PICKER
+   ========================================================= */
+
+let staffPlayerDirectory = [];
+
+async function loadStaffPlayerDirectory() {
+
+    if (!isStaff()) return [];
+
+    const { data: players, error } =
+        await supabaseClient
+            .from("player_directory")
+            .select("user_id,username")
+            .order("username", { ascending: true });
+
+    if (error) {
+        console.error("Staff player directory:", error);
+        toast("Could not load players.");
+        return [];
+    }
+
+    staffPlayerDirectory = players || [];
+    return staffPlayerDirectory;
+}
+
+async function populateStaffPlayerPicker() {
+
+    const players =
+        await loadStaffPlayerDirectory();
+
+    const select =
+        document.getElementById("staffTargetSelect");
+
+    if (!select) return;
+
+    select.innerHTML = `
+        <option value="">
+            Select a player...
+        </option>
+
+        ${players.map(player => `
+            <option
+                value="${esc(player.username)}">
+                ${esc(player.username)}
+            </option>
+        `).join("")}
+    `;
+}
+
+function syncStaffTargetPicker() {
+
+    const select =
+        document.getElementById("staffTargetSelect");
+
+    const input =
+        document.getElementById("staffTarget");
+
+    if (!select || !input) return;
+
+    input.value =
+        select.value || "";
+}
+/* =========================================================
+   STAFF CENTER PLAYER SELECTOR
+   ========================================================= */
+
+const previousRenderStaffWithPlayerPicker =
+    renderStaff;
+
+renderStaff = async function (
+    tab = "messages",
+    cat = "Advertising"
+) {
+
+    await previousRenderStaffWithPlayerPicker(
+        tab,
+        cat
+    );
+
+    if (tab === "messages") {
+
+        const targetInput =
+            document.getElementById("staffTarget");
+
+        if (targetInput) {
+
+            const wrapper =
+                document.createElement("div");
+
+            wrapper.className =
+                "staff-player-picker";
+
+            wrapper.innerHTML = `
+                <label>
+                    Choose player
+                </label>
+
+                <select
+                    id="staffTargetSelect"
+                    onchange="syncStaffTargetPicker()">
+
+                    <option value="">
+                        Loading players...
+                    </option>
+
+                </select>
+            `;
+
+            targetInput.parentNode.insertBefore(
+                wrapper,
+                targetInput
+            );
+
+            await populateStaffPlayerPicker();
+        }
+    }
+};
+/* =========================================================
+   AUTOMATED MESSAGE BUTTON FIX
+   ========================================================= */
+
+document.addEventListener(
+    "click",
+    function(event) {
+
+        const button =
+            event.target.closest(".message-option");
+
+        if (!button) return;
+
+        const text =
+            button.innerText
+                .replace(/\s+/g, " ")
+                .trim();
+
+        if (!text) return;
+
+        const field =
+            document.getElementById("staffBody");
+
+        if (!field) return;
+
+        field.value = text;
+        field.focus();
+
+        toast("Automated message loaded.");
+    }
+);
+/* =========================================================
+   STAFF CHAT DELETE
+   ========================================================= */
+
+async function deleteSharedChatMessage(messageId) {
+
+    if (!isStaff()) {
+        return toast("Staff access required.");
+    }
+
+    if (!confirm("Delete this chat message?")) {
+        return;
+    }
+
+    const { error } =
+        await supabaseClient
+            .from("chat_messages")
+            .delete()
+            .eq("id", messageId);
+
+    if (error) {
+        console.error("Chat delete:", error);
+
+        return toast(
+            error.message ||
+            "Could not delete message."
+        );
+    }
+
+    toast("Chat message deleted.");
+
+    await loadSharedChat();
+}
+/* =========================================================
+   FINAL STAFF CHAT DISPLAY WITH DELETE
+   ========================================================= */
+
+renderChat = function() {
+
+    const blocked =
+        data.jail ||
+        data.hospital ||
+        isRestricted();
+
+    const messages =
+        data.messages || [];
+
+    document.getElementById("main").innerHTML = `
+        <div class="hero">
+            <h1>District Chat</h1>
+            <p>Public player communication.</p>
+        </div>
+
+        ${
+            data.jail
+                ? `<div class="restriction">
+                    You are jailed. Chat is unavailable.
+                   </div>`
+                : ""
+        }
+
+        ${
+            data.hospital
+                ? `<div class="restriction">
+                    You are hospitalized. Chat is unavailable.
+                   </div>`
+                : ""
+        }
+
+        ${
+            isRestricted()
+                ? `<div class="restriction">
+                    <b>CHAT RESTRICTION</b><br>
+                    ${esc(data.restriction.reason)}<br>
+                    Remaining: ${esc(data.restriction.remaining)}
+                   </div>`
+                : ""
+        }
+
+        <div class="chat">
+
+            <div class="chat-window">
+
+                <div class="messages" id="messages">
+
+                    ${
+                        messages.length
+                        ?
+                        messages.map(message => `
+
+                            <div class="msg ${
+                                message.system
+                                    ? "system"
+                                    : ""
+                            }">
+
+                                <b>
+                                    ${
+                                        message.system
+                                            ? "SYSTEM"
+                                            : esc(message.user)
+                                    }
+                                </b>
+
+                                <span class="muted">
+                                    ${esc(message.time)}
+                                </span>
+
+                                <br>
+
+                                ${esc(message.text)}
+
+                                ${
+                                    isStaff() && message.id
+                                    ?
+                                    `
+                                    <br>
+
+                                    <button
+                                        class="danger"
+                                        onclick="deleteSharedChatMessage(${message.id})">
+
+                                        DELETE
+
+                                    </button>
+                                    `
+                                    :
+                                    ""
+                                }
+
+                            </div>
+
+                        `).join("")
+                        :
+                        `
+                        <div class="msg system">
+                            <b>SYSTEM</b><br>
+                            No chat messages yet.
+                        </div>
+                        `
+                    }
+
+                </div>
+
+                <div class="chat-input">
+
+                    <input
+                        id="chatText"
+                        maxlength="250"
+                        ${blocked ? "disabled" : ""}
+                        placeholder="${
+                            blocked
+                                ? "Chat unavailable"
+                                : "Type a message..."
+                        }">
+
+                    <button
+                        class="primary"
+                        ${blocked ? "disabled" : ""}
+                        onclick="sendChat()">
+
+                        SEND
+
+                    </button>
+
+                </div>
+
+            </div>
+
+            <div class="card">
+
+                <h3>Chat Rules</h3>
+
+                <p class="muted">
+                    No spam, advertising, harassment or abuse.
+                </p>
+
+                <span class="pill">
+                    ${blocked ? "RESTRICTED" : "CHAT OPEN"}
+                </span>
+
+            </div>
+
+        </div>
+    `;
+
+    setTimeout(() => {
+
+        const box =
+            document.getElementById("messages");
+
+        if (box) {
+            box.scrollTop =
+                box.scrollHeight;
+        }
+
+    }, 10);
 };
